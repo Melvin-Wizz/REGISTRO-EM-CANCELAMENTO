@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>REGISTRO COBRANÇA V2</title>
+  <title>REGISTRO COBRANÇA</title>
 
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; }
@@ -112,7 +112,7 @@
 <div id="alertBox" class="alert"></div>
 
 <script>
-  const API_URL = 'https://script.google.com/macros/s/AKfycbyRbG145MZD_JQMX5iD-wTCH0Ym6LSK6-KNL-rh_kxRXGc6prG1TFrHtgJ44yEljcCB/exec';
+  const API_URL = 'https://script.google.com/macros/s/AKfycby9LykZyOUKtMrvzMkuAzmj5JqesvYxAcjev5jodXDmPmeZSu2zcbN763IoMBOb0q2F/exec';
 
   const statusBig = document.getElementById('statusBig');
   const statusCheckbox = document.getElementById('statusCheckbox');
@@ -204,7 +204,7 @@
       mais2Faturas: checkboxFatura.checked,
       contatos: contatos.value,
       vencimento: vencimentoInput.value,
-      diasVencido: diasVencidosInput.value,
+      diasVencidos: diasVencidosInput.value,
       observacoes: observacoes.value,
       concluido: statusCheckbox.checked,
       primeiroRegistro: primeiroRegistroInput.value,
@@ -214,9 +214,8 @@
 
     fetch(API_URL, {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(formData)
-    })
-
     })
     .then(r => r.json())
     .then(res => {
