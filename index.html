@@ -111,8 +111,12 @@
 
 <div id="alertBox" class="alert"></div>
 
-<script>
-  const API_URL = 'https://script.google.com/macros/s/AKfycby9LykZyOUKtMrvzMkuAzmj5JqesvYxAcjev5jodXDmPmeZSu2zcbN763IoMBOb0q2F/exec';
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+  const SUPA_URL = 'https://blpzinkyhzhbwwfizzd.subsupabase.co';
+  const SUPA_KEY = 'sb_publishable_yxPlGiu76j_-OCEP0sFX3g_zTUH9YdD';
+  const supabase = createClient(SUPA_URL, SUPA_KEY);
 
   const statusBig = document.getElementById('statusBig');
   const statusCheckbox = document.getElementById('statusCheckbox');
@@ -160,36 +164,48 @@
     atualizarCorRegistroCancelamento();
   };
 
-  function buscarUltimoRegistro() {
+  async function buscarUltimoRegistro() {
     const codigo = document.getElementById('codigo').value.trim();
     if (!codigo) return;
 
-    fetch(`${API_URL}?acao=buscar&codigo=${codigo}`)
-      .then(r => r.json())
-      .then(result => {
-        ultimoRegistroInput.value = result.ultimoRegistro || '';
-        registroCancelamento.value = result.registroEmCobranca || '';
-        cliente.value = result.cliente || '';
-        vencimentoInput.value = result.vencimento || '';
-        contatos.value = result.contatos || '';
-        motivoSelect.value = result.motivo || '';
-        situacaoSelect.value = result.situacao || '';
-        checkboxFatura.checked = result.faturaVencida || false;
-        checkboxRetirada.checked = result.retiradaAberta || false;
-        observacoes.value = result.observacoes || '';
-        primeiroRegistroInput.value = result.primeiroRegistro || '';
+    const { data, error } = await supabase
+      .from('cancelamentos_2026')
+      .select('*')
+      .eq('codigo', codigo)
+      .order('ultimoRegistro', { ascending: false })
+      .limit(1)
+      .single();
 
-        statusCheckbox.checked = result.concluido || false;
-        statusBig.classList.toggle('active', statusCheckbox.checked);
+    if (error) {
+      showAlert('Erro ao buscar registro','error');
+      return;
+    }
 
-        atualizarDiasVencidos();
-        atualizarCorRegistroCancelamento();
-        showAlert('Registro carregado!');
-      })
-      .catch(() => showAlert('Erro ao buscar registro','error'));
+    if (data) {
+      ultimoRegistroInput.value = data.ultimoRegistro || '';
+      registroCancelamento.value = data.registroEmCobranca || '';
+      cliente.value = data.cliente || '';
+      vencimentoInput.value = data.vencimento || '';
+      contatos.value = data.contatos || '';
+      motivoSelect.value = data.motivo || '';
+      situacaoSelect.value = data.situacao || '';
+      checkboxFatura.checked = data.faturaVencida || false;
+      checkboxRetirada.checked = data.retiradaAberta || false;
+      observacoes.value = data.observacoes || '';
+      primeiroRegistroInput.value = data.primeiroRegistro || '';
+
+      statusCheckbox.checked = data.concluido || false;
+      statusBig.classList.toggle('active', statusCheckbox.checked);
+
+      atualizarDiasVencidos();
+      atualizarCorRegistroCancelamento();
+      showAlert('Registro carregado!');
+    } else {
+      showAlert('Nenhum registro encontrado','error');
+    }
   }
 
-  document.getElementById('saveBtn').onclick = () => {
+  document.getElementById('saveBtn').onclick = async () => {
     if (!primeiroRegistroInput.value) {
       showAlert('Preencha o PRIMEIRO REGISTRO','error');
       return;
@@ -201,32 +217,48 @@
       motivo: motivoSelect.value,
       situacao: situacaoSelect.value,
       retiradaAberta: checkboxRetirada.checked,
-      mais2Faturas: checkboxFatura.checked,
+      faturaVencida: checkboxFatura.checked,
       contatos: contatos.value,
       vencimento: vencimentoInput.value,
       diasVencidos: diasVencidosInput.value,
       observacoes: observacoes.value,
       concluido: statusCheckbox.checked,
       primeiroRegistro: primeiroRegistroInput.value,
-      ultimoRegistro: ultimoRegistroInput.value,
+      ultimoRegistro: new Date().toISOString(),
       registroEmCobranca: registroCancelamento.value
     };
 
-    fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData)
-    })
-    .then(r => r.json())
-    .then(res => {
-      if (res.success) showAlert(res.message);
-      else showAlert(res.message || 'Erro','error');
-    })
-    .catch(() => showAlert('Falha ao salvar','error'));
+    const { data, error } = await supabase
+      .from('cancelamentos_2026')
+      .upsert([formData]);
+
+    if (error) {
+      showAlert('Falha ao salvar: ' + error.message, 'error');
+    } else {
+      showAlert('Registro salvo com sucesso!');
+      carregarTabela();
+    }
   };
+
+  async function carregarTabela() {
+    const { data, error } = await supabase
+      .from('cancelamentos_2026')
+      .select('*')
+      .order('ultimoRegistro', { ascending: false });
+
+    if (error) return;
+
+    let html = '<table><tr><th>CLIENTE</th><th>CÓDIGO</th><th>MOTIVO</th><th>SITUAÇÃO</th><th>ULTIMO REGISTRO</th></tr>';
+    data.forEach(row => {
+      html += `<tr><td>${row.cliente || ''}</td><td>${row.codigo || ''}</td><td>${row.motivo || ''}</td><td>${row.situacao || ''}</td><td>${row.ultimoRegistro ? new Date(row.ultimoRegistro).toLocaleDateString() : ''}</td></tr>`;
+    });
+    html += '</table>';
+    document.getElementById('tabelaServidorContainer').innerHTML = html;
+  }
 
   atualizarCorRegistroCancelamento();
   atualizarDiasVencidos();
+  carregarTabela();
 </script>
 </body>
 </html>
