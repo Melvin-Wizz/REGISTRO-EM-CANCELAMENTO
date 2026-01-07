@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>REGISTRO COBRANÇA</title>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; }
+    body { background: #bc7b7b; color: #222; }
+    .navbar { display: flex; justify-content: space-between; align-items: center; padding: 14px 24px; background: #111; color: #fff; }
+    .nav-left { font-size: 18px; font-weight: bold; }
+    .content { display: flex; padding: 40px 80px; gap: 40px; }
+    .left-panel { background: #fff; padding: 30px 40px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); display: flex; gap: 24px; align-items: flex-start; width: 100%; }
+    .status-big { width: 120px; height: 86px; border-radius: 6px; background: #c0392b; display: flex; align-items: center; justify-content: center; margin-top: 2px; position: relative; }
+    .status-big.active { background: #27ae60; }
+    .status-big input { transform: scale(1.5); }
+    .fields { width: 360px; }
+    .field { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .field label { font-size: 13px; font-weight: bold; min-width: 120px; line-height: 32px; white-space: nowrap; }
+    .input-wrap { width: 100%; height: 32px; display: flex; align-items: center; gap: 6px; }
+    .field input, .field select, .field textarea { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; height: 32px; }
+    .field textarea { height: auto; min-height: 60px; resize: vertical; }
+    .field input[type="checkbox"] { width: 18px; height: 18px; margin: 0; cursor: pointer; }
+    .field input[readonly] { background: #eee; }
+    .right-actions { flex: 1; display: flex; flex-direction: column; gap: 12px; position: relative; }
+    .clear-btn { height: 86px; width: 120px; background: #4b2c82; color: #fff; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 6px; }
+    .table-placeholder { border: 1px solid #ccc; border-radius: 6px; overflow-x: auto; flex: 1; width: 100%; height: 100%; }
+    .table-placeholder table { width: 100%; border-collapse: collapse; }
+    .table-placeholder th, .table-placeholder td { border: 1px solid #ccc; padding: 6px 8px; font-size: 12px; text-align: center; }
+    .table-placeholder td[data-date] { white-space: nowrap; }
+    .record-box, .first-record { display: flex; flex-direction: column; margin-top: 12px; width: 100%; }
+    .record-box label, .first-record label { font-size: 12px; font-weight: bold; margin-bottom: 4px; }
+    .record-box input, .first-record input { width: 120px; padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; height: 32px; font-size: 13px; }
+    .save-btn { width: 100%; margin-top: 14px; padding: 12px; background: #222; color: #fff; border: none; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer; }
+    .left-records { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+
+    .alert { position: fixed; top: 20px; right: 20px; background: #27ae60; color: #fff; padding: 14px 20px; border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); font-weight: bold; z-index: 9999; opacity: 0; transform: translateY(-20px); transition: all 0.4s ease; }
+    .alert.show { opacity: 1; transform: translateY(0); }
+    .alert.error { background: #c0392b; }
+  </style>
+</head>
+<body>
+<div class="navbar">
+  <div class="nav-left active">CANCELAMENTO 2026</div>
+</div>
+<div class="content">
+  <div class="left-panel">
+
+    <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-start;">
+      <div class="status-big" id="statusBig">
+        <input type="checkbox" id="statusCheckbox">
+      </div>
+      <button class="clear-btn" id="clearBtn">LIMPAR</button>
+
+      <div class="left-records">
+        <div class="record-box">
+          <label>ÚLTIMO REGISTRO</label>
+          <div class="input-wrap"><input type="text" id="ultimoRegistro" value="" readonly></div>
+        </div>
+        <div class="record-box">
+          <label>REGISTRO EM CANCELAMENTO</label>
+          <div class="input-wrap"><input type="date" id="registroCancelamento"></div>
+        </div>
+        <div class="first-record">
+          <label>PRIMEIRO REGISTRO</label>
+          <div class="input-wrap"><input type="date" id="primeiroRegistroInput"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="fields">
+      <div class="field"><label>CLIENTE</label><div class="input-wrap"><input type="text" id="cliente"></div></div>
+      <div class="field"><label>CÓDIGO</label><div class="input-wrap"><input type="text" id="codigo" onblur="buscarUltimoRegistro()"></div></div>
+
+      <div class="field"><label>CONTATOS</label><div class="input-wrap"><input type="text" id="contatos"></div></div>
+      <div class="field"><label>MOTIVO</label><div class="input-wrap"><select id="motivoSelect">
+        <option value="">Selecione</option>
+        <option value="COMERCIO FECHANDO">COMERCIO FECHANDO</option>
+        <option value="DESCONTENTAMENTO">DESCONTENTAMENTO</option>
+        <option value="FALECIMENTO">FALECIMENTO</option>
+        <option value="FINANCEIRO">FINANCEIRO</option>
+        <option value="INVIABILIDADE TECNICA">INVIABILIDADE TECNICA</option>
+        <option value="MUDANÇA">MUDANÇA</option>
+        <option value="NÃO INFORMADO / OUTROS">NÃO INFORMADO / OUTROS</option>
+        <option value="PROBLEMAS TECNICOS">PROBLEMAS TECNICOS</option>
+        <option value="TROCA DE OPERADORA">TROCA DE OPERADORA</option>
+      </select></div></div>
+      <div class="field"><label>SITUAÇÃO</label><div class="input-wrap"><select id="situacaoSelect">
+        <option value="">Selecione</option>
+        <option value="EM PROCESSO">EM PROCESSO</option>
+        <option value="RETIDO">RETIDO</option>
+        <option value="NÃO RETIDO">NÃO RETIDO</option>
+      </select></div></div>
+
+      <div class="field"><label>VENCIMENTO</label><div class="input-wrap"><input type="date" id="vencimento"></div></div>
+      <div class="field"><label>DIAS VENCIDOS</label><div class="input-wrap"><input type="number" id="diasVencidos" readonly></div></div>
+
+      <div class="field"><label>FATURA VENCIDA</label><div class="input-wrap"><input type="checkbox" id="mais2Faturas"></div></div>
+      <div class="field"><label>RETIRADA ABERTA</label><div class="input-wrap"><input type="checkbox" id="retiradaAberta"></div></div>
+      <div class="field"><label>OBSERVAÇÕES</label><div class="input-wrap"><textarea id="observacoes"></textarea></div></div>
+      <button class="save-btn" id="saveBtn">SALVAR / ATUALIZAR</button>
+    </div>
+
+    <div class="right-actions">
+      <div class="table-placeholder" id="tabelaServidorContainer" style="width:100%; height:100%;"></div>
+    </div>
+
+  </div>
+</div>
+
+<div id="alertBox" class="alert"></div>
+
+<script>
+  const API_URL = 'https://script.google.com/macros/s/AKfycby9LykZyOUKtMrvzMkuAzmj5JqesvYxAcjev5jodXDmPmeZSu2zcbN763IoMBOb0q2F/exec';
+
+  const statusBig = document.getElementById('statusBig');
+  const statusCheckbox = document.getElementById('statusCheckbox');
+  const vencimentoInput = document.getElementById('vencimento');
+  const diasVencidosInput = document.getElementById('diasVencidos');
+  const registroCancelamento = document.getElementById('registroCancelamento');
+  const ultimoRegistroInput = document.getElementById('ultimoRegistro');
+  const alertBox = document.getElementById('alertBox');
+  const checkboxFatura = document.getElementById('mais2Faturas');
+  const checkboxRetirada = document.getElementById('retiradaAberta');
+
+  function showAlert(message, type = 'success') {
+    alertBox.innerText = message;
+    alertBox.className = `alert show ${type === 'error' ? 'error' : ''}`;
+    setTimeout(() => alertBox.classList.remove('show'), 3000);
+  }
+
+  statusCheckbox.addEventListener('change', () => {
+    statusBig.classList.toggle('active', statusCheckbox.checked);
+  });
+
+  function atualizarDiasVencidos() {
+    if (!vencimentoInput.value) return diasVencidosInput.value = '';
+    const hoje = new Date();
+    const venc = new Date(vencimentoInput.value);
+    const diff = Math.floor((hoje - venc) / 86400000);
+    diasVencidosInput.value = diff > 0 ? diff : 0;
+  }
+
+  vencimentoInput.addEventListener('change', atualizarDiasVencidos);
+
+  function atualizarCorRegistroCancelamento() {
+    registroCancelamento.style.backgroundColor = registroCancelamento.value ? '#c0392b' : '#27ae60';
+    registroCancelamento.style.color = registroCancelamento.value ? '#fff' : '#000';
+  }
+
+  registroCancelamento.addEventListener('change', atualizarCorRegistroCancelamento);
+
+  document.getElementById('clearBtn').onclick = () => {
+    document.querySelectorAll('input, textarea, select').forEach(el => {
+      if (el.type === 'checkbox') el.checked = false;
+      else el.value = '';
+    });
+    statusBig.classList.remove('active');
+    atualizarCorRegistroCancelamento();
+  };
+
+  function buscarUltimoRegistro() {
+    const codigo = document.getElementById('codigo').value.trim();
+    if (!codigo) return;
+
+    fetch(`${API_URL}?acao=buscar&codigo=${codigo}`)
+      .then(r => r.json())
+      .then(result => {
+        ultimoRegistroInput.value = result.ultimoRegistro || '';
+        registroCancelamento.value = result.registroEmCobranca || '';
+        cliente.value = result.cliente || '';
+        vencimentoInput.value = result.vencimento || '';
+        contatos.value = result.contatos || '';
+        motivoSelect.value = result.motivo || '';
+        situacaoSelect.value = result.situacao || '';
+        checkboxFatura.checked = result.faturaVencida || false;
+        checkboxRetirada.checked = result.retiradaAberta || false;
+        observacoes.value = result.observacoes || '';
+        primeiroRegistroInput.value = result.primeiroRegistro || '';
+
+        statusCheckbox.checked = result.concluido || false;
+        statusBig.classList.toggle('active', statusCheckbox.checked);
+
+        atualizarDiasVencidos();
+        atualizarCorRegistroCancelamento();
+        showAlert('Registro carregado!');
+      })
+      .catch(() => showAlert('Erro ao buscar registro','error'));
+  }
+
+  document.getElementById('saveBtn').onclick = () => {
+    if (!primeiroRegistroInput.value) {
+      showAlert('Preencha o PRIMEIRO REGISTRO','error');
+      return;
+    }
+
+    const formData = {
+      cliente: cliente.value,
+      codigo: codigo.value,
+      motivo: motivoSelect.value,
+      situacao: situacaoSelect.value,
+      retiradaAberta: checkboxRetirada.checked,
+      mais2Faturas: checkboxFatura.checked,
+      contatos: contatos.value,
+      vencimento: vencimentoInput.value,
+      diasVencidos: diasVencidosInput.value,
+      observacoes: observacoes.value,
+      concluido: statusCheckbox.checked,
+      primeiroRegistro: primeiroRegistroInput.value,
+      ultimoRegistro: ultimoRegistroInput.value,
+      registroEmCobranca: registroCancelamento.value
+    };
+
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData)
+    })
+    .then(r => r.json())
+    .then(res => {
+      if (res.success) showAlert(res.message);
+      else showAlert(res.message || 'Erro','error');
+    })
+    .catch(() => showAlert('Falha ao salvar','error'));
+  };
+
+  atualizarCorRegistroCancelamento();
+  atualizarDiasVencidos();
+</script>
+</body>
+</html>
