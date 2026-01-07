@@ -204,7 +204,7 @@
       mais2Faturas: checkboxFatura.checked,
       contatos: contatos.value,
       vencimento: vencimentoInput.value,
-      diasVencidos: diasVencidosInput.value,
+      diasVencido: diasVencidosInput.value,
       observacoes: observacoes.value,
       concluido: statusCheckbox.checked,
       primeiroRegistro: primeiroRegistroInput.value,
@@ -214,8 +214,9 @@
 
     fetch(API_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(formData)
+    })
+
     })
     .then(r => r.json())
     .then(res => {
